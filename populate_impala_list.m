@@ -1,8 +1,17 @@
 function [ list ] = populate_impala_list( TI, tau )
-%POPULATE_IMPALA_LIST Summary of this function goes here
+%POPULATE_IMPALA_LIST Create IMPALA style pattern library for MPS
 %
-%   TI: Training image 2D or 3D
-%   tau: data template
+%   Inputs:
+%       TI: Training image 2D or 3D
+%       tau: data template
+%
+%   Ouputs:
+%       list: cell array with d and c vectors    
+%           d: data event
+%           c: counts
+%
+%   Óli D. Jóhannsson 2017
+
 
 template_length = size(tau,1);
 cat = unique(TI(:))';
@@ -43,24 +52,40 @@ switch length(size(TI))
             end
         end
         
+        %Find unique patterns
+        [d,~,Id] = unique(cell2mat(list(:,1)),'rows');
+        list_length = length(d);
+        
+        % Create count matrix
+        C = cell2mat(list(:,2));
+        
+        %Preallocate final count matrix
+        c = zeros(list_length, num_cat);
+        
+        %For each unique pattern
+        for i = 1:list_length
+            %Sum counts for each facies
+            c(i,:) = sum(C(Id == i,:),1);
+            %Had forgotten ",1) " in sum! :D
+        end
+        
     case 3 % 3D
         tau = tau(:,1:3);
         [num_x,num_y,num_z] = size(TI);
         min_x = 1 + abs(min(tau(:,1)));
-        max_x = num_x - max(tau(:,1));
+        max_x = num_x - abs(max(tau(:,1)));
         min_y = 1 + abs(min(tau(:,2)));
-        max_y = num_y - max(tau(:,2));
+        max_y = num_y - abs(max(tau(:,2)));
         min_z = 1 + abs(min(tau(:,3)));
-        max_z = num_z - max(tau(:,3));
+        max_z = num_z - abs(max(tau(:,3)));
         
-        %assume every location has uniqie pattern for preallocation
-        list_length = (1+max_x-min_x)*(1+max_y-min_y)*(1+max_z-min_z);
-        list = cell(list_length,2);
-        
-        for i = min_x : max_x
+        parfor i = min_x : max_x
             for j = min_y : max_y
                 for k = min_z : max_z
-                    list_counter = list_counter + 1;
+                    %list_counter = list_counter + 1;
+                    %list_counter = 1 +...
+                    %    (i-min_x)*(1+max_y-min_y)*(1+max_z-min_z) +...
+                    %    (j-min_y)*(1+max_z-min_z) + (k-min_z);
                     
                     d = zeros(1,template_length);
                     
@@ -71,30 +96,32 @@ switch length(size(TI))
                     
                     c = 1.*(cat == TI(i,j,k));
                     
-                    list{list_counter,1} = d;
-                    list{list_counter,2} = c;
+                    %list{list_counter,1} = d;
+                    %list{list_counter,2} = c;
+                    D(i,j,k,:) = d;
+                    C(i,j,k,:) = c;
+                    
                 end
             end
         end
-        
-        
-end
 
-%Find unique patterns
-[d,~,Id] = unique(cell2mat(list(:,1)),'rows');
-list_length = length(d);
+        D = reshape(D,[max_x*max_y*max_z,size(tau,1)]);
+        C = reshape(C,[max_x*max_y*max_z,length(cat)]);
 
-% Create count matrix
-C = cell2mat(list(:,2));
+        %Find unique patterns
+        [d,~,Id] = unique(D,'rows');
+        list_length = length(d);
+       
+        %Preallocate final count matrix
+        c = zeros(list_length, num_cat);
 
-%Preallocate final count matrix
-c = zeros(list_length, num_cat);
-
-%For each unique pattern
-for i = 1:list_length
-    %Sum counts for each facies
-    c(i,:) = sum(C(Id == i,:),1);
-    %Had forgotten ",1) " in sum! :D
+        %For each unique pattern
+        % Note: Parfor is >2x faster on a 4 core for a large list.
+        %       There maybe a faster way to do this though.
+        parfor i = 1:list_length
+            %Sum counts for each facies
+            c(i,:) = sum(C(Id == i,:),1);
+        end 
 end
 
 list = mat2cell([d c],ones(1,list_length),[template_length num_cat]);
