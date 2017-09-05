@@ -25,9 +25,10 @@ function [ SG, tauG ] = impala_core(SG, list, path, tau, rand_pre, cat,...
 %
 
 n_u = length(path);
+dim = length(size(SG));
 
 %only use dimensions of tau present in simulation grid
-tau = tau(:,1:length(size(SG)));
+tau = tau(:,1:dim);
 
 template_length = length(tau);
 tauG = zeros(size(SG));
@@ -53,15 +54,22 @@ start = 1;
 %If no informed nodes exist
 if n_u == length(SG(:))
     result = cat(find(marginal_prob_cum > rand_pre(1),1));
-    %SG(path(start,1),path(start,2)) = result;
-    SG(path(start,:)) = result;
+    switch dim
+        case 1
+            SG(path(start,1)) = result;  
+        case 2
+            SG(path(start,1),path(start,2)) = result;            
+        case 3
+            SG(path(start,1),path(start,2),path(start,3)) = result;            
+    end
     start = start + 1;
 end
 
 %while uninformed nodes exist (e.g. for rest of random path).
 
+%TODO: Implement 1D support too.
 %swith for 2D and 3D:
-switch length(size(SG))
+switch dim
     case 2 %2D
         for i = start:n_u
             d = zeros(1,template_length);
@@ -193,10 +201,10 @@ switch length(size(SG))
                 if counts_tot < threshold
                     % Draw fropom marginal distribution
                     result = cat(find(marginal_prob_cum > rand_pre(i),1));
-                    SG(path(i,1),path(i,2)) = result;
+                    SG(path(i,1),path(i,2),path(i,3)) = result;
                     
                     % Set data event length to zero
-                    tauG(path(i,1),path(i,2)) = 0;
+                    tauG(path(i,1),path(i,2),path(i,3)) = 0;
                     
                 else
                     % probabilities
@@ -205,20 +213,20 @@ switch length(size(SG))
                     % commulative probabilities
                     prob_cum = cumsum(probs);
                     % draw a value and assign
-                    SG(path(i,1),path(i,2)) = cat(find(prob_cum >...
+                    SG(path(i,1),path(i,2),path(i,3)) = cat(find(prob_cum >...
                         rand_pre(i),1));
                     
                     % record data event length
-                    tauG(path(i,1),path(i,2)) = length(informed);
+                    tauG(path(i,1),path(i,2),path(i,3)) = length(informed);
                 end
                 
             else
                 % Draw fropom marginal distribution
-                SG(path(i,1),path(i,2)) = cat(find(marginal_prob_cum >...
+                SG(path(i,1),path(i,2),path(i,3)) = cat(find(marginal_prob_cum >...
                     rand_pre(i),1));
                 
                 % Set data event length to zero
-                tauG(path(i,1),path(i,2)) = 0;
+                tauG(path(i,1),path(i,2),path(i,3)) = 0;
             end
             if (print && ~mod(100.*i./n_u,5))
                 time_elapsed = toc;

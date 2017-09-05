@@ -6,7 +6,7 @@ function [ list ] = populate_impala_list( TI, tau )
 %       tau: data template
 %
 %   Ouputs:
-%       list: cell array with d and c vectors    
+%       list: cell array with d and c vectors
 %           d: data event
 %           c: counts
 %
@@ -32,7 +32,7 @@ switch length(size(TI))
         max_y = num_y - max(tau(:,2));
         
         list_length = (1+max_x-min_x)*(1+max_y-min_y);
-        list = cell(list_length,2);
+        list = cell(final_list_length,2);
         
         for i = min_x : max_x
             for j = min_y : max_y
@@ -54,16 +54,16 @@ switch length(size(TI))
         
         %Find unique patterns
         [d,~,Id] = unique(cell2mat(list(:,1)),'rows');
-        list_length = length(d);
+        final_list_length = size(d,1);
         
         % Create count matrix
         C = cell2mat(list(:,2));
         
         %Preallocate final count matrix
-        c = zeros(list_length, num_cat);
+        c = zeros(final_list_length, num_cat);
         
         %For each unique pattern
-        for i = 1:list_length
+        for i = 1:final_list_length
             %Sum counts for each facies
             c(i,:) = sum(C(Id == i,:),1);
             %Had forgotten ",1) " in sum! :D
@@ -79,7 +79,7 @@ switch length(size(TI))
         min_z = 1 + abs(min(tau(:,3)));
         max_z = num_z - abs(max(tau(:,3)));
         
-        parfor i = min_x : max_x
+        for i = min_x : max_x
             for j = min_y : max_y
                 for k = min_z : max_z
                     %list_counter = list_counter + 1;
@@ -104,26 +104,49 @@ switch length(size(TI))
                 end
             end
         end
-
+        
         D = reshape(D,[max_x*max_y*max_z,size(tau,1)]);
         C = reshape(C,[max_x*max_y*max_z,length(cat)]);
-
+        
+        tic
         %Find unique patterns
+        %[d,~,Id] = unique(D,'rows','sorted');
+        %[d,ID,Id] = unique(D,'rows','sorted');
         [d,~,Id] = unique(D,'rows');
-        list_length = length(d);
-       
+        final_list_length = size(d,1);
+        toc
+        
         %Preallocate final count matrix
-        c = zeros(list_length, num_cat);
-
+        c = zeros(final_list_length, num_cat);
+        
         %For each unique pattern
         % Note: Parfor is >2x faster on a 4 core for a large list.
         %       There maybe a faster way to do this though.
-        parfor i = 1:list_length
+        tic
+        for i = 1:final_list_length
             %Sum counts for each facies
             c(i,:) = sum(C(Id == i,:),1);
-        end 
-end
+        end
+        toc
+        %c
+%         tic
+%         c3 = zeros(final_list_length, num_cat);
+%         for i = 1:final_list_length
+%             for j = 1:length(C)
+%                 if Id(j) == i
+%                     c3(i,:) = c3(i,:) + C(j,:);
+%                 end
+%             end
+%         end
+%         toc
+%         %c3
+%         isequal(c,c3) 
 
-list = mat2cell([d c],ones(1,list_length),[template_length num_cat]);
+end
+%whos d
+%whos c
+%num_cat
+%final_list_length
+list = mat2cell([d c],ones(1,final_list_length),[template_length num_cat]);
 
 
