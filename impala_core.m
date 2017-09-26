@@ -93,6 +93,8 @@ switch dim
                     
                     ind = find(all(D(:,informed)==d(informed), 2));
                     
+                    %TODO make this more efficient.
+                    
                     %ind = find(all(bsxfun(@eq, D(:,informed), d(informed)), 2));
                     
                     % if no matches, remove last informed node.

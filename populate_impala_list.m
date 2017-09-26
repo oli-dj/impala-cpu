@@ -32,7 +32,7 @@ switch length(size(TI))
         max_y = num_y - max(tau(:,2));
         
         list_length = (1+max_x-min_x)*(1+max_y-min_y);
-        list = cell(final_list_length,2);
+        list = cell(list_length,2);
         
         for i = min_x : max_x
             for j = min_y : max_y

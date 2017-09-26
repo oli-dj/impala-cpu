@@ -27,8 +27,11 @@ function [ SG, tauG ] = impala_core_distance(SG, list, path, tau, rand_pre, cat,
 n_u = length(path);
 dim = length(size(SG));
 
-%only use dimensions of tau present in simulation grid
+% only use dimensions of tau present in simulation grid
 tau = tau(:,1:dim);
+
+% assign highest weights to closest points in data event
+weights = (1./sum(tau.^2,2).^3)';
 
 template_length = length(tau);
 tauG = zeros(size(SG));
@@ -87,8 +90,13 @@ switch dim
                 counts_tot = 0;
                 while counts_tot < threshold
                     % search list for matches with informed nodes
+
+                    % This was slower
+                    %matches = D==d;
+                    %invdist2 = sum(bsxfun(@times,weights,matches), 2);
                     
-                    invdist = sum(D(:,informed)==d(informed), 2);
+                    % This is still faster
+                    invdist = sum(bsxfun(@times,weights(informed),D(:,informed)==d(informed)), 2);
                     ind = find(invdist == max(invdist));
                     
                     

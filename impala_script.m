@@ -19,8 +19,8 @@ sg_z = 64;
 %TI = channels;
 
 %3D
-TI = read_eas_matrix('ti_fluvsim_250_250_100.dat');
-%TI = read_eas_matrix('ti_cb_6x6_40_40_40.dat');
+%TI = read_eas_matrix('ti_fluvsim_250_250_100.dat');
+TI = read_eas_matrix('ti_cb_6x6_40_40_40.dat');
 
 dim = length(size(TI));
 cat = unique(TI(:))';
